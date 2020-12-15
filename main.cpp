@@ -37,9 +37,10 @@ void myMouse(int, int, int, int);
 void keyboard(unsigned char, int, int);
 void menu();
 void initialiseValues();
+BOOLEAN nanosleep(LONGLONG);
 
 
-struct timespec jmp,jmp2;
+//struct timespec jmp,jmp2;
 
 GLfloat a,b,c,d,e,f,g,h,x,i;
 bool main_menu;
@@ -56,8 +57,8 @@ float theta;
 
 
 void initialiseValues() {
-    a=0;    b=0;    c=0;    d=0;    e=0;    f=0;    
-    g=500;  h=600;  
+    a=0;    b=0;    c=0;    d=0;    e=0;    f=0;
+    g=500;  h=600;
     x=0;    i=0;
     main_menu = true;
     start = false;
@@ -98,10 +99,11 @@ void display()
 	    }
 
 	    if(b==180) {
-            b+=1.5;
-		    jmp.tv_sec = 0;
-		    jmp.tv_nsec = 50000000L;
-		    nanosleep(&jmp , &jmp2);
+            //b+=1.5;
+		//jmp.tv_sec = 0;
+		//jmp.tv_nsec = 25000000L;
+		//nanosleep(&jmp , &jmp2);
+		nanosleep(5000000L);
 	    }
 
 	    if(b>180) {
@@ -245,7 +247,7 @@ void bezier(point *control_points_array, int number_of_control_points, int numbe
 void floatingWater() {
     int number_of_control_points=4, number_of_bezier_points=20;
     float water_height = 125;
-    point control_points_array[number_of_control_points] = 
+    point control_points_array[number_of_control_points] =
                 {{-250,water_height,0},{250,water_height+25,0},{750,water_height-25,0},{1250,water_height,0}};
     control_points_array[1].x += 50*sin(theta*PI/180.0);
     control_points_array[1].y += 25*sin(theta*PI/180.0);
@@ -270,11 +272,11 @@ void floatingWater() {
 
 
 void keyboard(unsigned char key, int x, int y) {
-	
+
 	switch(key) {
 
 		case ESCAPE: exit(1);
-		
+
 		case ' ':
 			if (main_menu) main_menu = false;
 			break;
@@ -298,21 +300,21 @@ void myMouse(int button,int state,int x,int y)
 
 void menu() {
 	glClearColor(1.0,1.0,0.6,1.0);
-	text(290,700,"TRAFFIC LIGHT SIMULATOR",1);
-	text(390,660,"Using OpenGL",1);
-	text(430,620,"Made By:",2);
-	text(300,590,"Athish Venkatesh       Mahendar Singh Rathod",1);
-	text(300,560," 18GAEI6010               18GAEM9042",2);
-    text(400,540,"INSTRUCTIONS:",2);
-	text(100,500,"Left click on your mouse to start",2);
-	text(100,460,"Press ESC to exit at any time",2);
+	text(390,700,"SINKING SHIP",1);
+	text(410,660,"Using OpenGL",2);
+	text(430,600,"Made By:",2);
+	text(250,560,"Athish Venkatesh               Mahendar Singh Rathod",1);
+	text(250,530,"18GAEI6010                                 18GAEM9042",2);
+    text(100,440,"INSTRUCTIONS:",2);
+	text(100,400,"Left click on your mouse to start",2);
+	text(100,360,"Press ESC to exit at any time",2);
 //  text(100,420,"W -- Yellow Light",2);
 //	text(100,380,"R -- Green Light",2);
 //	text(560,500,"For Right Traffic Light",2);
 //	text(600,460,"A -- Red Light",2);
 //	text(600,420,"S -- Yellow Light",2);
 //	text(600,380,"D -- Green Light",2);
-	text(200,100,"PRESS SPACEBAR TO CONTINUE",3);
+	text(320,100,"PRESS SPACEBAR TO CONTINUE",3);
 	glutPostRedisplay();
 	//glutSwapBuffers();
 }
@@ -640,6 +642,27 @@ void myinit()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0.0,999.0,0.0,799.0);
+}
+
+BOOLEAN nanosleep(LONGLONG ns){
+	/* Declarations */
+	HANDLE timer;	/* Timer handle */
+	LARGE_INTEGER li;	/* Time defintion */
+	/* Create timer */
+	if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+		return FALSE;
+	/* Set timer properties */
+	li.QuadPart = -ns;
+	if(!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)){
+		CloseHandle(timer);
+		return FALSE;
+	}
+	/* Start & wait for timer */
+	WaitForSingleObject(timer, INFINITE);
+	/* Clean resources */
+	CloseHandle(timer);
+	/* Slept without problems */
+	return TRUE;
 }
 
 int main(int argc, char* argv[])
