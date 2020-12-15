@@ -1,10 +1,17 @@
 #include<stdio.h>
 #include<GL/glut.h>
 #include<stdlib.h>
+#include "GL/freeglut.h"
+#include "GL/gl.h"
 #include<time.h>
 
 #include<math.h>
+#include<string>
+
 #define PI 3.1416
+#define ESCAPE 27
+
+using namespace std;
 
 void rock();
 void display1();
@@ -25,10 +32,18 @@ void computeNcR(int, int*);
 void computeBezier(float, point *, int, point *, int *);
 void bezier(point *, int, int);
 
+void text(int, int, string, int);
+void myMouse(int, int, int, int);
+void keyboard(unsigned char, int, int);
+void menu();
+void initialiseValues();
+
 
 struct timespec jmp,jmp2;
 
-GLfloat a=0,b=0,c=0,d=0,e=0,f=0,g=500,h=600,x=0,i=0;
+GLfloat a,b,c,d,e,f,g,h,x,i;
+bool main_menu;
+bool start;
 
 
 
@@ -36,18 +51,25 @@ GLfloat a=0,b=0,c=0,d=0,e=0,f=0,g=500,h=600,x=0,i=0;
 
 
 
-float theta = 0;
+float theta;
 
 
 
-
+void initialiseValues() {
+    a=0;    b=0;    c=0;    d=0;    e=0;    f=0;    
+    g=500;  h=600;  
+    x=0;    i=0;
+    main_menu = true;
+    start = false;
+    theta = 0;
+}
 
 
 
 
 void update(int value)
 {
-	a+=1;
+	if (start) a+=1;
 	glutPostRedisplay();
 	glutTimerFunc(10,update,0);
 }
@@ -55,29 +77,39 @@ void update(int value)
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	display1();
 
-	if(a>950)
+	if (main_menu) {
+        menu();
+    }
 
-	{
-        if(b>180) b+=0.5;
-        else b+=1.5;
-		display2();
-	}
-	if(b==180)
-	{
-        b+=1.5;
-		jmp.tv_sec = 0;
-		jmp.tv_nsec = 25000000L;
-		nanosleep(&jmp , &jmp2);
-	}
-	if(b>180)
-	{
+    else if (x<-100) {
+        printf("The ship sunk completely");
+        initialiseValues();
+    }
 
-		c+=0.75;
-		display3();
+    else {
 
-	}
+        if (a<950) display1();
+
+	    if(a>950) {
+            if(b>180) b+=0.5;
+            else b+=1.5;
+		    display2();
+	    }
+
+	    if(b==180) {
+            b+=1.5;
+		    jmp.tv_sec = 0;
+		    jmp.tv_nsec = 50000000L;
+		    nanosleep(&jmp , &jmp2);
+	    }
+
+	    if(b>180) {
+		    c+=0.75;
+		    display3();
+	    }
+
+    }
 
 	glFlush();
 	glutSwapBuffers();
@@ -136,7 +168,21 @@ void display3()
 
 
 
-
+void text(int x, int y, string s, int font) {
+	int i=0;
+	glColor3f(0.0,0.0,0.8);
+	glRasterPos2f(x,y);
+	for(i=0;i<s.length();i++) {
+		if(font==1)
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,s[i]);
+		else if(font==2)
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,s[i]);
+		else if(font==3) {
+			glColor3f(1.0,0.0,0.0);
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,s[i]);
+		}
+	}
+}
 
 
 
@@ -223,8 +269,53 @@ void floatingWater() {
 
 
 
+void keyboard(unsigned char key, int x, int y) {
+	
+	switch(key) {
+
+		case ESCAPE: exit(1);
+		
+		case ' ':
+			if (main_menu) main_menu = false;
+			break;
+
+		default:
+        	printf("You pressed: %c", key);
+	}
+}
+
+void myMouse(int button,int state,int x,int y)
+{
+	if(button==GLUT_LEFT_BUTTON && state==GLUT_UP) {
+        if (main_menu) main_menu = false;
+        else if (!start) start = true;
+	}
+
+	glutPostRedisplay();
+}
 
 
+
+void menu() {
+	glClearColor(1.0,1.0,0.6,1.0);
+	text(290,700,"TRAFFIC LIGHT SIMULATOR",1);
+	text(390,660,"Using OpenGL",1);
+	text(430,620,"Made By:",2);
+	text(300,590,"Athish Venkatesh       Mahendar Singh Rathod",1);
+	text(300,560," 18GAEI6010               18GAEM9042",2);
+    text(400,540,"INSTRUCTIONS:",2);
+	text(100,500,"Left click on your mouse to start",2);
+	text(100,460,"Press ESC to exit at any time",2);
+//  text(100,420,"W -- Yellow Light",2);
+//	text(100,380,"R -- Green Light",2);
+//	text(560,500,"For Right Traffic Light",2);
+//	text(600,460,"A -- Red Light",2);
+//	text(600,420,"S -- Yellow Light",2);
+//	text(600,380,"D -- Green Light",2);
+	text(200,100,"PRESS SPACEBAR TO CONTINUE",3);
+	glutPostRedisplay();
+	//glutSwapBuffers();
+}
 
 
 
@@ -555,14 +646,8 @@ int main(int argc, char* argv[])
 
 {
 	int chs;
+    initialiseValues();
 	printf("Project Developed By Athish Venkatesh and Mahendar Singh Rathod\n");
-	// printf("\n------------------------------------------------------------------\n");
-	// printf("Steps to run this cg project\n");
-	printf("\n------------------------------------------------------------------\n");
-	printf("Type Any Key and Hit Enter\n");
-	printf("\n******************************************************************\n\n");
-	scanf("%d",&chs);
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(1024.0,768.0);
@@ -570,6 +655,8 @@ int main(int argc, char* argv[])
 	glutCreateWindow("Sinking Ship");
 	glutDisplayFunc(display);
 	myinit();
+	glutKeyboardFunc(keyboard);
+	glutMouseFunc(myMouse);
 	glutTimerFunc(250,update,0);
 	glutMainLoop();
 	return 0;
