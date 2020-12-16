@@ -37,14 +37,16 @@ void myMouse(int, int, int, int);
 void keyboard(unsigned char, int, int);
 void menu();
 void initialiseValues();
-BOOLEAN nanosleep(LONGLONG);
+//BOOLEAN nanosleep(LONGLONG);
 
 
-//struct timespec jmp,jmp2;
+struct timespec jmp,jmp2;
 
-GLfloat a,b,c,d,e,f,g,h,x,i;
+GLfloat a,b,c,d,e,f,g,h,x,i,velocity;
 bool main_menu;
 bool start;
+bool right;
+bool crashed;
 
 
 
@@ -57,11 +59,14 @@ float theta;
 
 
 void initialiseValues() {
-    a=0;    b=0;    c=0;    d=0;    e=0;    f=0;
+    a=0;    b=-250;    c=0;    d=0;    e=0;    f=0;
     g=500;  h=600;
     x=0;    i=0;
+    velocity=1;
     main_menu = true;
     start = false;
+    right = true;
+    crashed = false;
     theta = 0;
 }
 
@@ -70,7 +75,11 @@ void initialiseValues() {
 
 void update(int value)
 {
-	if (start) a+=1;
+	if (start) {
+        if(right || crashed) a+=velocity;
+        else if(a>0) a-=velocity;
+        else a=0;
+    }
 	glutPostRedisplay();
 	glutTimerFunc(10,update,0);
 }
@@ -84,30 +93,38 @@ void display()
     }
 
     else if (x<-100) {
-        printf("The ship sunk completely");
+        printf("The ship sunk completely\n");
         initialiseValues();
     }
 
     else {
 
-        if (a<950) display1();
+        if(a<950) {
+            display1();
+            b = -250;
+        }
 
-	    if(a>950) {
-            if(b>180) b+=0.5;
-            else b+=1.5;
+	    if(a>950 && b<180) {
+            if(start && right) b+=velocity;
+            else if(start) b-=velocity;
 		    display2();
 	    }
 
 	    if(b==180) {
-            //b+=1.5;
-		//jmp.tv_sec = 0;
-		//jmp.tv_nsec = 25000000L;
-		//nanosleep(&jmp , &jmp2);
-		nanosleep(5000000L);
+            crashed = true;
+            start = true;
+            b = 181;
+		    jmp.tv_sec = 0;
+		    jmp.tv_nsec = 25000000L;
+		    nanosleep(&jmp , &jmp2);
+//		    nanosleep(5000000L);
 	    }
 
 	    if(b>180) {
-		    c+=0.75;
+            crashed = true;
+            b+=(velocity/4);
+            c+=(3*velocity/4);
+        	x-=(velocity/10);
 		    display3();
 	    }
 
@@ -144,7 +161,6 @@ void display2()
 void display3()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	x-=0.1;
 	rock();
 	glPushMatrix();
 	glTranslated(b,100+x*5,0.0);
@@ -273,24 +289,43 @@ void floatingWater() {
 
 void keyboard(unsigned char key, int x, int y) {
 
-	switch(key) {
+	printf("Keyboard Log : %c\n", key);
 
-		case ESCAPE: exit(1);
+    if(key==ESCAPE) exit(1);
+    if(crashed) return;
+
+	switch(key) {
 
 		case ' ':
 			if (main_menu) main_menu = false;
+            else start = !start;
 			break;
 
-		default:
-        	printf("You pressed: %c", key);
+        case 'w':
+            right = true;
+            start = true;
+            break;
+
+        case 's':
+            right = false;
+            start = true;
+            break;
+
+        case '+':
+            if(velocity<3 && start) velocity += 1;
+            break;
+
+        case '-':
+            if(velocity>1) velocity -= 1;
+            else if (velocity==1) start = false;
+            break;
 	}
 }
 
 void myMouse(int button,int state,int x,int y)
 {
-	if(button==GLUT_LEFT_BUTTON && state==GLUT_UP) {
-        if (main_menu) main_menu = false;
-        else if (!start) start = true;
+	if(button==GLUT_LEFT_BUTTON && state==GLUT_UP && main_menu) {
+        main_menu = false;
 	}
 
 	glutPostRedisplay();
@@ -303,20 +338,17 @@ void menu() {
 	text(390,700,"SINKING SHIP",1);
 	text(410,660,"Using OpenGL",2);
 	text(430,600,"Made By:",2);
-	text(250,560,"Athish Venkatesh               Mahendar Singh Rathod",1);
-	text(250,530,"18GAEI6010                                 18GAEM9042",2);
+	text(250,550,"Athish Venkatesh               Mahendar Singh Rathod",1);
+	text(250,520,"18GAEI6010                                 18GAEM9042",2);
     text(100,440,"INSTRUCTIONS:",2);
-	text(100,400,"Left click on your mouse to start",2);
-	text(100,360,"Press ESC to exit at any time",2);
-//  text(100,420,"W -- Yellow Light",2);
-//	text(100,380,"R -- Green Light",2);
-//	text(560,500,"For Right Traffic Light",2);
-//	text(600,460,"A -- Red Light",2);
-//	text(600,420,"S -- Yellow Light",2);
-//	text(600,380,"D -- Green Light",2);
-	text(320,100,"PRESS SPACEBAR TO CONTINUE",3);
+	text(100,400,"Press SpaceBar to Start / Stop the ship",2);
+	text(100,360,"Press '+' to increase ship's speed",2);
+    text(100,320,"Press '-' to decrease ship's speed",2);
+    text(100,280,"Press 'W' to move the ship Forward",2);
+    text(100,240,"Press 'S' to Reverse the ship",2);
+    text(100,200,"Press ESC to exit at any time",2);
+	text(320,100,"LEFT CLICK ON YOUR MOUSE TO CONTINUE",3);
 	glutPostRedisplay();
-	//glutSwapBuffers();
 }
 
 
@@ -325,27 +357,6 @@ void menu() {
 
 
 
-
-
-
-
-
-
-
-
-
-void water()
-{
-    glEnable(GL_BLEND);
-    glBlendFunc(1, 0.5);
-	glColor3f(0.196078,0.6,0.8);
-	glBegin(GL_POLYGON);
-		glVertex2f(0,0);
-		glVertex2f(1000,0);
-		glVertex2f(1000,100);
-		glVertex2f(0,100);
-	glEnd();
-}
 
 void ship()
 {
@@ -644,26 +655,24 @@ void myinit()
 	gluOrtho2D(0.0,999.0,0.0,799.0);
 }
 
+
+/*
 BOOLEAN nanosleep(LONGLONG ns){
-	/* Declarations */
-	HANDLE timer;	/* Timer handle */
-	LARGE_INTEGER li;	/* Time defintion */
-	/* Create timer */
+	HANDLE timer;
+	LARGE_INTEGER li;
 	if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
 		return FALSE;
-	/* Set timer properties */
 	li.QuadPart = -ns;
 	if(!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)){
 		CloseHandle(timer);
 		return FALSE;
 	}
-	/* Start & wait for timer */
 	WaitForSingleObject(timer, INFINITE);
-	/* Clean resources */
 	CloseHandle(timer);
-	/* Slept without problems */
 	return TRUE;
 }
+*/
+
 
 int main(int argc, char* argv[])
 
